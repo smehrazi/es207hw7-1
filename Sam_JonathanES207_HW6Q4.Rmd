@@ -1,0 +1,73 @@
+---
+title: "ES 207 HW6"
+subtitle: "Questions 9, 10, 14, 15 from HW 4"
+output: html_notebook
+author: "Jonathan Sam"
+---
+
+###Question 9
+```{r}
+library(tidyverse)
+library(readxl)
+setwd("~/Desktop/ca_ozone")
+loc <- read_excel("location.xls")
+loc
+
+length(str_subset(loc$`Site Name`, "San\\s|Santa"))
+```
+
+###Question 10
+```{r}
+length(loc$Address) - sum(str_detect(loc$Address, "\\d") & str_detect(loc$`Zip Code`, "\\d{5}"), na.rm = T)
+```
+
+###Question 14
+######Other needed objects
+```{r}
+library(stringr)
+setwd('~/Desktop/ca_ozone')
+str_o3.filelist <- lapply(o3.filenames, read_delim, delim = "|")
+names(str_o3.filelist) <- str_sub(str_subset(o3.filenames, ".txt$"), start = 1, end = str_length(o3.filenames)-4)
+names(o3.filelist) == names(str_o3.filelist)
+library(data.table)
+daily <- o3.filelist %>%
+  rbindlist() %>%
+  group_by(site = as.factor(site), date) %>%
+  summarize(o3 = mean(obs, na.rm = TRUE))
+```
+
+
+```{r}
+colnames(loc)[1] <- "site"
+daily.site <- daily %>%
+  left_join(loc, by = "site")
+
+#object x is a tidy dataset 
+annual.stats.onlySanSanta <- function(x){
+  b <- filter(x, str_detect(`Site Name`, "San\\s|Santa")) #extracting any 'San' or 'Santa' from the original dataset
+  b %>%
+    group_by(Year = str_sub(as.factor(date), start = 1, end = 4), `Site Name`, site) %>%
+    summarize(o3.mean = mean(o3, na.rm = T), o3.median = median(o3, na.rm = T), o3.max = max(o3, na.rm = T), o3.min = min(o3, na.rm = T))
+}
+annual.stats.onlySanSanta(daily.site)
+```
+
+###Question 15
+```{r}
+#object x will be a tidy dataset 
+#object y will be a character responding to the county name to be tested
+annual.daily.mean <- function(x, y){ 
+  z <- as.character(y)
+  b <- filter(x, str_detect(`County Name`, z)) #obtaining desired county subset
+  b %>%
+    group_by(Year = str_sub(as.factor(date), start = 1, end = 4)) %>%
+    summarize(o3.annual.mean = mean(o3, na.rm = T))
+}
+annual.daily.mean(daily.site, "Merced")
+```
+```{r}
+annual.daily.mean.Merced <- annual.daily.mean(daily.site, "Merced")
+plot(annual.daily.mean.Merced$Year, annual.daily.mean.Merced$o3.annual.mean, ylab = "Merced o3 annual mean", xlab = "Year", main = "Merced County annual o3")
+```
+
+
