@@ -4,6 +4,6 @@ annual.daily.mean <- function(x, y){
   z <- as.character(y)
   b <- filter(x, str_detect(`County Name`, z)) #obtaining desired county subset
   b %>%
-    group_by(Year = str_sub(as.factor(date), start = 1, end = 4)) %>%
+    group_by(year=year(date)) %>%
     summarize(o3.annual.mean = mean(o3, na.rm = T))
 }
